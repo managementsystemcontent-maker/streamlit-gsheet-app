@@ -6,3 +6,6 @@ google-auth
 icalendar
 pytz
 openpyxl
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
