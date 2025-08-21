@@ -1,37 +1,47 @@
 import streamlit as st
 import gspread
 import pandas as pd
-from oauth2client.service_account import ServiceAccountCredentials
-from ics import Calendar, Event
 from datetime import datetime, time
+from ics import Calendar, Event
 
 # --- SETUP GOOGLE SHEETS ---
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
+try:
+    # Menggunakan st.secrets untuk kredensial yang lebih aman di Streamlit Cloud
+    creds = st.secrets["gcp_service_account"]
+    
+    # Lingkup akses yang diperlukan
+    scope = ["https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive"]
+    
+    # Otorisasi gspread client dengan kredensial dari st.secrets
+    client = gspread.service_account_from_dict(creds, scopes=scope)
 
-# ganti dengan credential JSON dari Google Cloud
-creds = ServiceAccountCredentials.from_json_keyfile_name("content-management-fitria-37938e9747f9.json", scope)
-client = gspread.authorize(creds)
+except Exception as e:
+    st.error(f"Gagal memuat kredensial dari st.secrets: {e}")
+    st.info("Pastikan Anda sudah menambahkan kredensial di Streamlit Secrets.")
+    st.stop() # Hentikan eksekusi jika kredensial gagal
 
-# buka Google Sheet (ganti URL/ID sesuai sheet lo)
+# Buka Google Sheet (ganti URL/ID sesuai sheet lo)
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1IVzpOG7R7YD4F3geE06rbb8ouLwkeC53RUQPhUlbR-4/edit"
-sheet = client.open_by_url(SHEET_URL).sheet1
+try:
+    sheet = client.open_by_url(SHEET_URL).sheet1
+except gspread.exceptions.APIError as e:
+    st.error(f"Gagal membuka Google Sheet: {e}")
+    st.stop()
 
 st.title("📅 Fitria Content Management")
 
+# --- KELOMPOK INPUT DAN OPSIONAL ---
 headers = [
     "No", "Content Pillar", "Platform", "Type of Content", "Status", "Concept",
     "Headline/Hook", "Scripting", "Caption", "Asset", "Time to post", "Date"
 ]
 
-# Dropdown options (edit sesuai kebutuhan)
+# Opsi dropdown (edit sesuai kebutuhan)
 content_pillar_options = ["Education", "Promo", "Tips", "Motivation"]
 platform_options = ["Instagram", "TikTok", "Facebook", "YouTube"]
 type_content_options = ["Image", "Video", "Reels", "Story"]
 status_options = ["Draft", "In Progress", "Scheduled", "Posted"]
-
-# Dropdown jam (setiap 30 menit)
-time_options = [f"{h:02d}:{m:02d}" for h in range(0, 24) for m in [0, 30]]
 
 # --- INPUT FORM ---
 with st.form("content_form", clear_on_submit=True):
@@ -47,7 +57,9 @@ with st.form("content_form", clear_on_submit=True):
         scripting = st.text_area("Scripting")
         caption = st.text_area("Caption")
         asset = st.text_input("Asset (Link/Folder)")
-        time_post = st.text_input("Time to post (HH:MM)")  # ubah jadi text input
+        # Menggunakan st.time_input untuk input jam yang lebih baik
+        time_post_obj = st.time_input("Time to post") 
+        time_post = time_post_obj.strftime("%H:%M")
         date_post = st.date_input("Date (YYYY-MM-DD)")
         date_post_str = date_post.strftime("%Y-%m-%d")
 
@@ -85,9 +97,10 @@ if not df.empty:
         time_str = str(row["Time to post"])
         try:
             dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-            event.begin = dt.strftime("%Y-%m-%d %H:%M")
+            # ICS menggunakan format datetime yang spesifik
+            event.begin = dt
         except Exception:
-            st.error("Format tanggal atau jam salah. Pastikan 'Date' = YYYY-MM-DD dan 'Time to post' = HH:MM.")
+            st.error("Format tanggal atau jam salah. Pastikan 'Date' = YYY-MM-DD dan 'Time to post' = HH:MM.")
             st.stop()
 
         event.description = f"{row['Caption']}\n\nConcept: {row['Concept']}"
