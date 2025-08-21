@@ -1,0 +1,8 @@
+streamlit
+pandas
+python-dotenv
+gspread
+google-auth
+icalendar
+pytz
+openpyxl
