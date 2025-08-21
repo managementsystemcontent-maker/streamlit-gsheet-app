@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 from datetime import datetime
-
 import gspread
 import pandas as pd
 import streamlit as st
@@ -26,12 +25,18 @@ STATUS_OPTIONS = ["Draft", "In Progress", "Scheduled", "Posted"]
 # 🧠 OPENROUTER (AI BRAINSTORM)
 # =========================
 try:
-    import openai
-    openai.api_key = st.secrets["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"]
-    openai.api_base = "https://openrouter.ai/api/v1"
-    OPENROUTER_READY = True
+    # Memeriksa apakah kunci API ada sebelum mengimpor openai
+    if "openrouter_api_key" in st.secrets:
+        import openai
+        openai.api_key = st.secrets["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"]
+        openai.api_base = "https://openrouter.ai/api/v1"
+        OPENROUTER_READY = True
+    else:
+        OPENROUTER_READY = False
+        openai = None
 except Exception:
     OPENROUTER_READY = False
+    openai = None
 
 def ai_brainstorm(user_prompt: str, vibe: str) -> str:
     """Panggil OpenRouter untuk brainstorming ide konten."""
@@ -42,9 +47,9 @@ def ai_brainstorm(user_prompt: str, vibe: str) -> str:
             model="openrouter/anthropic/claude-3.5-sonnet",
             messages=[
                 {
-                    "role": "system",
+                    "role": "Assistant",
                     "content": (
-                        "Kamu adalah asisten kreatif berbahasa Indonesia yang membantu brainstorming ide konten "
+                        "Kamu adalah asisten kreatif berbahasa Indonesia ataupun bahasa inggris yang membantu brainstorming ide konten "
                         "untuk Instagram/TikTok/Facebook/YouTube. Jawab dengan poin-poin rapi, berikan variasi angle, "
                         "ide hook, CTA, dan contoh caption singkat. Gaya fun, suportif, dan sedikit gemesin 💕."
                     ),
@@ -218,8 +223,3 @@ with tab_data:
                 f.writelines(cal.serialize_iter())
             with open("content_event.ics", "rb") as f:
                 st.download_button("⬇️ Download ICS", f, "content_event.ics", "text/calendar")
-
-# =========================
-# 📌 CATATAN
-# =========================
-st.caption("Requirements: `streamlit`, `gspread`, `pandas`, `ics`, `openai`.\nTambahkan `gcp_service_account` & `openrouter_api_key` di `st.secrets`.")
