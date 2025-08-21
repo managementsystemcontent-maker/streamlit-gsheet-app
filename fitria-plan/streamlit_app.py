@@ -27,7 +27,7 @@ STATUS_OPTIONS = ["Draft", "In Progress", "Scheduled", "Posted"]
 # =========================
 try:
     import openai
-    openai.api_key = st.secrets["openrouter_api_key"]
+    openai.api_key = st.secrets["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"]
     openai.api_base = "https://openrouter.ai/api/v1"
     OPENROUTER_READY = True
 except Exception:
