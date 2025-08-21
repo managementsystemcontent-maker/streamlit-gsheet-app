@@ -25,10 +25,9 @@ STATUS_OPTIONS = ["Draft", "In Progress", "Scheduled", "Posted"]
 # 🧠 OPENROUTER (AI BRAINSTORM)
 # =========================
 try:
-    # Memeriksa apakah kunci API ada sebelum mengimpor openai
     if "openrouter_api_key" in st.secrets:
         import openai
-        openai.api_key = st.secrets["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"]
+        openai.api_key = st.secrets["openrouter_api_key"]
         openai.api_base = "https://openrouter.ai/api/v1"
         OPENROUTER_READY = True
     else:
@@ -47,9 +46,9 @@ def ai_brainstorm(user_prompt: str, vibe: str) -> str:
             model="openrouter/anthropic/claude-3.5-sonnet",
             messages=[
                 {
-                    "role": "Assistant",
+                    "role": "system",
                     "content": (
-                        "Kamu adalah asisten kreatif berbahasa Indonesia ataupun bahasa inggris yang membantu brainstorming ide konten "
+                        "Kamu adalah asisten kreatif berbahasa Indonesia yang membantu brainstorming ide konten "
                         "untuk Instagram/TikTok/Facebook/YouTube. Jawab dengan poin-poin rapi, berikan variasi angle, "
                         "ide hook, CTA, dan contoh caption singkat. Gaya fun, suportif, dan sedikit gemesin 💕."
                     ),
@@ -65,6 +64,7 @@ def ai_brainstorm(user_prompt: str, vibe: str) -> str:
 # =========================
 # 📗 GOOGLE SHEETS
 # =========================
+@st.cache_resource
 def get_sheet():
     try:
         creds = st.secrets["gcp_service_account"]
